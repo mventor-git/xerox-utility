@@ -11,3 +11,4 @@
 - 2026-09-03: ticket-010 — app run_once wired (poll→cards→notify→purge) + settings record/problems; live-stable across flaky device states.
 - 2026-09-03: ticket-011 — device now Box 1 only (user-deleted rest); run_once zero-skip clean; retired flakiness rows.
 - 2026-09-03: ticket-012 — git-ready + pushed (mventor-git/xerox-utility); README credits; guide.md; full setup.bat/run.bat; private gitignore.
+- 2026-09-03: ticket-013 — polished GUI (stylesheet, sidebar, cards, settings, popups); widget test caught 2 real bugs.
