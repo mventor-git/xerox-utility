@@ -9,3 +9,27 @@ build/
 logs/
 Thumbs.db
 .DS_Store
+
+# Work history stays local, never pushed
+tickets/
+
+# Screenshots and image outputs
+screenshots/
+*.png
+
+# Environment and secrets
+.env
+.env.*
+*.key
+*.pem
+*credentials*
+*secret*
+*password*
+
+# Personal data and scan outputs
+scans/
+*.pdf
+*.tif
+*.tiff
+*.jpg
+*.jpeg

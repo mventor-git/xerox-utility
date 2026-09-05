@@ -62,3 +62,12 @@ Modules never import each other — only `src/app/` connects them.
   that's the next big step (BACKLOG #1).
 - If the panel ever shows a system error, restart the machine and give
   it a few minutes; the app waits patiently and catches up.
+
+## Credits — how this was built
+
+Designed and built by **Mventor**, the Software Development Operating
+System (architecture, engineering, QA, docs, and release care in one
+loop), together with **Muse** thinking agents (product thinking and
+project profiles).
+
+Powered by **Muse Spark 1.3 Free** · **OpenCode Zen** · **xhigh**.
