@@ -10,16 +10,25 @@ Evidence: `logs/probe-20260903T104615Z-*`. Read-only probe: GET + list-POST only
   (Box1: 17 docs; kind=2; names `img-MDDHHMMSS`, e.g. `img-903091643`).
 
 ## Shape-known (from Retrieve-form tail)
-- Retrieve: `GET /PBDOCLNK.cmd` 15 fields: BOX,PWD,ORD,DGACNT,GACNT,ACNTUID,
-  DOC (slash-joined `8025/`),FORM∈{TIFJPG,PDF} (`var formOpt`),PAGE,SMNL,HCMP,ICMP,OCR,LANG,TCMP.
-  Direct calls → `503 REQUEST: ERROR` (6 variants tried: обоих DOC styles, both FORMs,
-  ±acct fields, ±Referer, browser-order session, cookieless). Blob UNPROVEN.
+- Retrieve: `GET /PBDOCLNK.cmd`, 15 fields: BOX,PWD,ORD,DGACNT,GACNT,ACNTUID,
+  DOC (slash-joined `8025/`), FORM∈{TIFJPG,PDF} (`var formOpt`), PAGE, SMNL,
+  HCMP, ICMP, OCR, LANG, TCMP. Blob UNPROVEN (see exhaustion log).
+- Print: `POST /PBDOCPRT.cmd` (same DOC style). Out of scope.
+- Box-level: `POST /PBLST.cmd`, `/PBINFO.cmd`, `/PBOXRMLST[KO].cmd`. Out of scope (never touch boxes).
+
+## Retrieve exhaustion log (ticket-015, all read-only, all → 503 REQUEST: ERROR)
+Minimal GET · exact-shape GET (PDF + TIFJPG) · full 15-field GET · +Referer ·
+browser-order session (scpblst→list→link, cookieless confirmed) · POST-variant ·
+IE header set · multi-DOC (`8091/8090/`) · index-DOC (`0/`).
+Direct HTTP is rejected at app level. Playbook: drive a real headed browser
+(Playwright) through CentreWare → mailbox → Retrieve, capture the download
+request, then replicate that exact sequence. No browser installs were done here.
+
+## Delete (proven)
 - Delete: `POST /PBDOCRM.cmd {BOX,PWD,ORD,DOC slash-joined}`. PROVEN 2026-09-03
   (ticket-004, user-confirmed): Box1/DOC `8107/` → HTTP 200 + `REQUEST: ACCEPTED`
   + "successfully processed"; verify-after 17→16 docs, only 8107 gone.
   Always re-list first (PWD is a per-list session token); assert before/after diff.
-- Print: `POST /PBDOCPRT.cmd` (same DOC style). Out of scope.
-- Box-level: `POST /PBLST.cmd`, `/PBINFO.cmd`, `/PBOXRMLST[KO].cmd`. Out of scope (never touch boxes).
 
 ## Notes
 - No cookies set by device. Box1 stable at 16 docs (newest 8091).

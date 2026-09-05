@@ -27,9 +27,14 @@ the device until the address is updated.
 
 1. Copy the **Xerox Utility** folder onto the PC (e.g. `Documents`).
 2. Double-click **`setup.bat`** — it does everything itself:
-   Python (if missing), all packages, and a desktop shortcut.
+   Python (if missing), all packages, **finds your printer on the
+   network**, lets you **pick its scan folder by name**, creates a
+   desktop shortcut (plus start-at-login, if you say yes).
 3. When it asks, say **Y** to start the app right away — or later,
    double-click **`run.bat`** (or the desktop shortcut). No typing needed.
+
+To remove everything later, double-click **`uninstall.bat`** — it takes
+out the shortcuts and, only if you agree, your settings and trash archive.
 
 ## 2. First run
 

@@ -13,3 +13,5 @@
 - 2026-09-03: ticket-012 — git-ready + pushed (mventor-git/xerox-utility); README credits; guide.md; full setup.bat/run.bat; private gitignore.
 - 2026-09-03: ticket-013 — polished GUI (stylesheet, sidebar, cards, settings, popups); widget test caught 2 real bugs.
 - 2026-09-03: ticket-014 — hardcode audit (APP_NAME/URLs/paths/poll-interval centralized; dynamic box labels); guide LAN prerequisites + README link.
+- 2026-09-03: ticket-015 — retrieve exhaustion log + Playwright playbook (9 variants, all 503).
+- 2026-09-03: ticket-016 — setup v2 (LAN sweep all subnets, box-by-name pick, autostart, uninstaller); e2e proven with artifacts.

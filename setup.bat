@@ -1,14 +1,14 @@
 @echo off
 REM Xerox Utility -- full automatic setup for office PCs.
-REM Does everything: Python (winget - choco - direct), packages,
-REM desktop shortcut. Just double-click.
+REM Python (winget - choco - direct) - packages - printer find -
+REM shortcuts (+ autostart). Just double-click.
 setlocal EnableDelayedExpansion
 cd /d "%~dp0"
 set APPDIR=%CD%
 
 echo === Xerox Utility full setup ===
 echo.
-echo [1/5] Checking Python 3.11+...
+echo [1/6] Checking Python 3.11+...
 python --version >nul 2>&1
 if not errorlevel 1 goto :pyfound
 goto :install_python
@@ -60,9 +60,8 @@ exit /b 1
 for /f "tokens=2" %%v in ('python --version 2^>^&1') do set PYVER=%%v
 echo Found Python %PYVER%.
 
-:deps
 echo.
-echo [2/5] Installing ALL required packages...
+echo [2/6] Installing ALL required packages...
 python -m pip install --upgrade pip >nul 2>&1
 python -m pip install -r requirements.txt
 if errorlevel 1 (
@@ -77,7 +76,7 @@ if errorlevel 1 (
 )
 
 echo.
-echo [3/5] Verifying every package...
+echo [3/6] Verifying every package...
 python -c "import requests, PIL, pypdf, img2pdf, windows_toasts, customtkinter" 2>nul
 if errorlevel 1 (
   echo [ERROR] At least one package is missing or broken.
@@ -88,16 +87,35 @@ if errorlevel 1 (
 echo requests, Pillow, pypdf, img2pdf, windows-toasts, customtkinter -- all OK.
 
 echo.
-echo [4/5] Creating a desktop shortcut...
-powershell -NoProfile -Command "$s=(New-Object -COM WScript.Shell).CreateShortcut($env:USERPROFILE+'\Desktop\Xerox Utility.lnk'); $s.TargetPath='!APPDIR!\run.bat'; $s.WorkingDirectory='!APPDIR!'; $s.Save()"
+echo [4/6] Finding your printer and choosing its folder...
+python setup_helper.py
 if errorlevel 1 (
-  echo [NOTE] Shortcut failed -- just double-click run.bat in this folder instead.
-) else (
-  echo Desktop shortcut created.
+  echo [NOTE] Printer setup did not finish -- the app is installed, though.
+  echo Re-run this file once the printer is reachable.
 )
 
 echo.
-echo [5/5] All set!
+echo [5/6] Creating shortcuts...
+powershell -NoProfile -Command "$s=(New-Object -COM WScript.Shell).CreateShortcut($env:USERPROFILE+'\Desktop\Xerox Utility.lnk'); $s.TargetPath='!APPDIR!\run.bat'; $s.WorkingDirectory='!APPDIR!'; $s.Save()"
+if errorlevel 1 (
+  echo [NOTE] Desktop shortcut failed -- just double-click run.bat in this folder instead.
+) else (
+  echo Desktop shortcut created.
+)
+set /p AUTO="Start Xerox Utility automatically at login? [Y/n] "
+if /i "!AUTO:~0,1!"=="N" (
+  echo OK -- start it by hand after login.
+) else (
+  powershell -NoProfile -Command "$s=(New-Object -COM WScript.Shell).CreateShortcut($env:APPDATA+'\Microsoft\Windows\Start Menu\Programs\Startup\Xerox Utility.lnk'); $s.TargetPath='!APPDIR!\run.bat'; $s.WorkingDirectory='!APPDIR!'; $s.Save()"
+  if errorlevel 1 (
+    echo [NOTE] Autostart shortcut failed -- start the app by hand after login.
+  ) else (
+    echo It will now start on its own every login.
+  )
+)
+
+echo.
+echo [6/6] All set! See guide.md for everyday use.
 set /p STARTNOW="Start Xerox Utility now? [Y/N] "
-if /i "!STARTNOW!"=="Y" call run.bat
+if /i "!STARTNOW:~0,1!"=="Y" call run.bat
 pause

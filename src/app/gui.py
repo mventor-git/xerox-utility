@@ -311,11 +311,11 @@ class XeroxApp:
         from src.modules import settings as setmod
         win = ctk.CTkToplevel(self.root)
         win.title("Settings")
-        win.geometry("440x400")
+        win.geometry("440x440")
         cur = setmod.current_settings(self.cfg)
         rows = {}
-        for i, (key, label) in enumerate((("ip", "Printer address"), ("store_dir", "My scans folder"),
-                                          ("trash_dir", "Trash folder"))):
+        for i, (key, label) in enumerate((("ip", "Printer address"), ("box", "Watch box (0 = all)"),
+                                          ("store_dir", "My scans folder"), ("trash_dir", "Trash folder"))):
             ctk.CTkLabel(win, text=label, font=(F, 12, "bold")).grid(row=i, column=0, padx=14, pady=8, sticky="w")
             e = ctk.CTkEntry(win, width=250, height=30, corner_radius=8)
             e.insert(0, cur.get(key, ""))
@@ -323,7 +323,7 @@ class XeroxApp:
             rows[key] = e
         msg = ctk.CTkLabel(win, text="The app keeps your originals in trash, always.", font=(F, 11),
                            text_color=STYLE["muted_text"])
-        msg.grid(row=3, column=0, columnspan=2, pady=4)
+        msg.grid(row=4, column=0, columnspan=2, pady=4)
 
         def browse():
             d = filedialog.askdirectory(title="Where should your scans go?")
@@ -343,22 +343,28 @@ class XeroxApp:
             try:
                 setmod.apply_settings(self.cfg, ip=rows["ip"].get(),
                                       store_dir=rows["store_dir"].get(),
-                                      trash_dir=rows["trash_dir"].get() or None)
+                                      trash_dir=rows["trash_dir"].get() or None,
+                                      box=rows["box"].get().strip())
                 cfgmod.save_config(self.cfg)
                 self.base_url = cfgmod.base_url(self.cfg)
-                msg.configure(text="Saved ✓")
+                msg.configure(text="Saved ✓ (new box takes effect on next poll)")
             except Exception as exc:
                 messagebox.showerror("Settings", str(exc))
 
-        ctk.CTkButton(win, text="Browse…", corner_radius=8,
-                      fg_color="transparent", border_width=1,
-                      border_color=STYLE["card_border"], command=browse).grid(row=4, column=0, padx=14, pady=6)
-        ctk.CTkButton(win, text="Check device", corner_radius=8,
-                      fg_color=STYLE["info"], hover_color=STYLE["info_hover"],
-                      command=check).grid(row=4, column=1, padx=14, pady=6)
-        ctk.CTkButton(win, text="Save", font=(F, 13, "bold"), corner_radius=8,
-                      fg_color=STYLE["accent"], hover_color=STYLE["accent_hover"],
-                      text_color=STYLE["accent_text"], command=save).grid(row=5, column=0, columnspan=2, pady=12)
+        browse_btn = ctk.CTkButton(win, text="Browse…", corner_radius=8,
+                                    fg_color="transparent", border_width=1,
+                                    border_color=STYLE["card_border"], command=browse)
+        browse_btn.grid(row=5, column=0, padx=14, pady=6)
+        check_btn = ctk.CTkButton(win, text="Check device", corner_radius=8,
+                                  fg_color=STYLE["info"], hover_color=STYLE["info_hover"],
+                                  command=check)
+        check_btn.grid(row=5, column=1, padx=14, pady=6)
+        save_btn = ctk.CTkButton(win, text="Save", font=(F, 13, "bold"), corner_radius=8,
+                                 fg_color=STYLE["accent"], hover_color=STYLE["accent_hover"],
+                                 text_color=STYLE["accent_text"], command=save)
+        save_btn.grid(row=6, column=0, columnspan=2, pady=12)
+        self._settings = {"window": win, "rows": rows, "msg": msg,
+                          "browse": browse_btn, "check": check_btn, "save": save_btn}
 
     def mainloop(self) -> None:
         self.root.mainloop()

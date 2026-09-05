@@ -4,12 +4,12 @@ from __future__ import annotations
 
 def current_settings(cfg: dict) -> dict:
     return {"ip": cfg.get("ip", ""), "timeout": cfg.get("timeout", 10),
-            "store_dir": cfg.get("store_dir", ""), "trash_dir": cfg.get("trash_dir", ""),
-            "purge_check_days": cfg.get("purge_check_days", 30)}
+            "box": cfg.get("box", 1), "store_dir": cfg.get("store_dir", ""),
+            "trash_dir": cfg.get("trash_dir", ""), "purge_check_days": cfg.get("purge_check_days", 30)}
 
 
 def apply_settings(cfg: dict, ip: str | None = None, store_dir: str | None = None,
-                   trash_dir: str | None = None) -> dict:
+                   trash_dir: str | None = None, box: int | str | None = None) -> dict:
     if ip is not None:
         ip = ip.strip()
         if not ip:
@@ -19,6 +19,14 @@ def apply_settings(cfg: dict, ip: str | None = None, store_dir: str | None = Non
         cfg["store_dir"] = store_dir
     if trash_dir is not None:
         cfg["trash_dir"] = trash_dir
+    if box is not None:
+        try:
+            box = int(box)
+        except (TypeError, ValueError):
+            raise ValueError("box must be a number (0 = all boxes)")
+        if box < 0:
+            raise ValueError("box must be 0 or higher")
+        cfg["box"] = box
     return cfg
 
 

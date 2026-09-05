@@ -23,13 +23,20 @@ def build(cfg_path: Path | None = None, *, state_path: Path | None = None,
         from src.modules import settings as setmod
         base = cfgmod.base_url(cfg)
         first = not wm_path.exists()
+        try:
+            found = discover.discover_boxes(device_client.get_raw_box_page(base))
+        except Exception:
+            found = []
+        box_names = {b["no"]: b["name"] for b in found}
+        want = int(cfg.get("box") or 0)
         if box_nos is not None:
             boxes = list(box_nos)
-            box_names = {}
-        else:
-            found = discover.discover_boxes(device_client.get_raw_box_page(base))
+        elif want > 0:
+            boxes = [want]
+        elif found:
             boxes = [b["no"] for b in found]
-            box_names = {b["no"]: b["name"] for b in found}
+        else:
+            raise RuntimeError("no boxes discovered and no box configured")
         fetch = list_box or (lambda b: poller.fetch_box_docs(base, b, cfg.get("timeout", 10)))
         state = W.load(wm_path)
         fresh, state, errors = poller.poll_once(fetch, boxes, state, extract_ts,
