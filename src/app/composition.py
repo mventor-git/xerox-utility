@@ -46,9 +46,14 @@ def build(cfg_path: Path | None = None, *, state_path: Path | None = None,
         notified = notify.notify_new_scans(fresh, backend=backend)
         purge_due = delmod.purge_check_due(cfg.get("last_purge_check"),
                                            days=cfg.get("purge_check_days", delmod.PURGE_CHECK_DAYS))
-        if purge_due:
+        if purge_due and delmod.nudge_due(cfg):
             notify.send(APP_NAME, delmod.purge_message(delmod.count_archived(troot)),
                         backend=backend)
+            delmod.stamp_nudge(cfg)
+            try:
+                cfgmod.save_config(cfg, cfg_path)
+            except OSError:
+                pass  # stamp lost; worst case the nudge repeats, the sweep survives
         return {"fresh": fresh, "errors": errors, "notified": notified,
                 "purge_due": purge_due, "queue": queue, "problems": setmod.problems(cfg),
                 "box_names": box_names}

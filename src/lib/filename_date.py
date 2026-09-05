@@ -36,3 +36,11 @@ def extract_datetime(filename: str, year: int | None = None) -> datetime | None:
     except ValueError:
         return None
     return None
+
+
+DEVICE_DATE_FMT = "%d/%m/%Y %I:%M %p"  # e.g. '03/09/2026 09:17 AM'
+
+
+def parse_device_date(text: str) -> datetime:
+    """Device `date` column → datetime. Raises ValueError on garbage (caller counts skips)."""
+    return datetime.strptime((text or "").strip(), DEVICE_DATE_FMT)

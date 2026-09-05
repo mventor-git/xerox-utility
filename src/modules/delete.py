@@ -81,6 +81,24 @@ def purge_check_due(last_check: str | None, days: int = PURGE_CHECK_DAYS,
     return ((today or date.today()) - last).days >= days
 
 
+def nudge_due(cfg: dict, today: str | None = None) -> bool:
+    """One nudge per day, only while a review is actually owed."""
+    now = today or date.today().isoformat()
+    if cfg.get("last_purge_nudge") == now:
+        return False
+    return purge_check_due(cfg.get("last_purge_check"),
+                           days=int(cfg.get("purge_check_days", PURGE_CHECK_DAYS)),
+                           today=date.fromisoformat(now))
+
+
+def stamp_nudge(cfg: dict, today: str | None = None) -> dict:
+    """Remember today's nudge so it fires once. Caller persists cfg."""
+    stamp = today or date.today().isoformat()
+    date.fromisoformat(stamp)  # fail loudly on bad stamp
+    cfg["last_purge_nudge"] = stamp
+    return cfg
+
+
 def purge_message(n_archived: int) -> str:
     return (f"App trash holds {n_archived} archived scan(s). "
             f"Review and purge what you no longer need — nothing is deleted automatically.")

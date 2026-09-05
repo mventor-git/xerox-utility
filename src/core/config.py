@@ -21,7 +21,8 @@ def default_config_path() -> Path:
 
 def default_config() -> dict:
     return {"ip": DEFAULT_IP, "timeout": DEFAULT_TIMEOUT, "box": 1, "store_dir": "",
-            "trash_dir": "", "last_purge_check": "", "purge_check_days": DEFAULT_PURGE_CHECK_DAYS,
+            "trash_dir": "", "last_purge_check": "", "last_purge_nudge": "",
+            "purge_check_days": DEFAULT_PURGE_CHECK_DAYS,
             "poll_interval": DEFAULT_POLL_INTERVAL}
 
 

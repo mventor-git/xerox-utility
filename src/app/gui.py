@@ -92,6 +92,7 @@ class XeroxApp:
         self._results: queue.Queue = queue.Queue()
         self._card_widgets: dict = {}
         self._box_names: dict = {}
+        self._found: list | None = None  # calendar-find results replace the queue view
         F = STYLE["font"]
 
         ctk.set_appearance_mode("system")
@@ -134,9 +135,36 @@ class XeroxApp:
                                             text_color=STYLE["muted_text"])
         self.footer_boxes.pack(side="bottom", pady=(0, 14), padx=16, anchor="w")
 
-        self.cards_box = ctk.CTkScrollableFrame(self.root, label_text="…",
+        right = ctk.CTkFrame(self.root, fg_color="transparent")
+        right.pack(side="right", fill="both", expand=True)
+        self.cards_box = ctk.CTkScrollableFrame(right, label_text="…",
                                                 label_font=(F, 14, "bold"), corner_radius=0)
-        self.cards_box.pack(side="right", fill="both", expand=True)
+        self.cards_box.pack(side="bottom", fill="both", expand=True)
+
+        find = ctk.CTkFrame(right, fg_color="transparent")
+        find.pack(side="top", fill="x", padx=8, pady=(8, 0))
+        ctk.CTkLabel(find, text="Find:", font=(F, 12, "bold")).pack(side="left", padx=(0, 4))
+        self.from_entry = ctk.CTkEntry(find, width=110, height=28, corner_radius=8,
+                                       placeholder_text="From YYYY-MM-DD")
+        self.from_entry.pack(side="left", padx=2)
+        ctk.CTkButton(find, text="📅", width=36, height=28, corner_radius=8,
+                      fg_color="transparent", border_width=1, border_color=STYLE["card_border"],
+                      command=lambda: self.pick_date(self.from_entry)).pack(side="left", padx=2)
+        self.to_entry = ctk.CTkEntry(find, width=110, height=28, corner_radius=8,
+                                     placeholder_text="To YYYY-MM-DD")
+        self.to_entry.pack(side="left", padx=2)
+        ctk.CTkButton(find, text="📅", width=36, height=28, corner_radius=8,
+                      fg_color="transparent", border_width=1, border_color=STYLE["card_border"],
+                      command=lambda: self.pick_date(self.to_entry)).pack(side="left", padx=2)
+        ctk.CTkButton(find, text="Find", width=70, height=28, corner_radius=8,
+                      fg_color=STYLE["info"], hover_color=STYLE["info_hover"],
+                      command=self.find_now).pack(side="left", padx=6)
+        ctk.CTkButton(find, text="Clear", width=70, height=28, corner_radius=8,
+                      fg_color="transparent", border_width=1, border_color=STYLE["card_border"],
+                      command=self.clear_find).pack(side="left", padx=2)
+        self.find_info = ctk.CTkLabel(find, text="", font=(F, 11),
+                                      text_color=STYLE["muted_text"])
+        self.find_info.pack(side="left", padx=8)
 
         self.refresh_cards()
         self.root.after(1000, self._drain)
@@ -223,7 +251,8 @@ class XeroxApp:
         for w in self.cards_box.winfo_children():
             w.destroy()
         self._card_widgets = {}
-        for card in self.app["queue"]:
+        view = self._view()
+        for card in view:
             f = ctk.CTkFrame(self.cards_box, corner_radius=STYLE["radius"],
                              border_width=1, border_color=STYLE["card_border"])
             f.pack(fill="x", pady=6, padx=8)
@@ -254,22 +283,36 @@ class XeroxApp:
                           fg_color="transparent", border_width=1, border_color=STYLE["card_border"],
                           command=lambda cid=card["id"]: self.archive_card(cid)).pack(side="left", padx=2)
             self._card_widgets[card["id"]] = {"frame": f, "name": name, "fmt": fmt, "preview": None}
-        if not self.app["queue"]:
-            ctk.CTkLabel(self.cards_box, text="✓", font=(F, 40)).pack(pady=(60, 0))
-            ctk.CTkLabel(self.cards_box, text="All caught up — nothing new.",
-                         font=(F, 15, "bold")).pack()
-            ctk.CTkLabel(self.cards_box, text="New scans will appear here on their own.",
-                         font=(F, 12), text_color=STYLE["muted_text"]).pack(pady=(0, 40))
+        if not view:
+            if self._found is not None:
+                ctk.CTkLabel(self.cards_box, text="No scans between those dates.",
+                             font=(F, 15, "bold")).pack(pady=(60, 0))
+                ctk.CTkLabel(self.cards_box, text="Widen the range and Find again, or Clear.",
+                             font=(F, 12), text_color=STYLE["muted_text"]).pack(pady=(0, 40))
+            else:
+                ctk.CTkLabel(self.cards_box, text="✓", font=(F, 40)).pack(pady=(60, 0))
+                ctk.CTkLabel(self.cards_box, text="All caught up — nothing new.",
+                             font=(F, 15, "bold")).pack()
+                ctk.CTkLabel(self.cards_box, text="New scans will appear here on their own.",
+                             font=(F, 12), text_color=STYLE["muted_text"]).pack(pady=(0, 40))
             return
-        for card in self.app["queue"]:
+        if self._found is not None:
+            ctk.CTkLabel(self.cards_box,
+                         text=f"Found {len(view)} — Clear goes back to new arrivals.",
+                         font=(F, 12), text_color=STYLE["muted_text"]).pack(pady=(2, 0))
+        for card in view:
             if card.get("expanded") and card.get("preview"):
                 self._attach_preview(card["id"], card)
 
+    def _view(self) -> list:
+        """Cards on screen: calendar-find results when active, else the live queue."""
+        return self._found if self._found is not None else self.app["queue"]
+
     def _find(self, card_id: str) -> dict:
-        for c in self.app["queue"]:
+        for c in self._view():
             if c["id"] == card_id:
                 return c
-        raise RuntimeError("card is gone — poll again")
+        raise RuntimeError("card is gone — poll again or clear the search")
 
     def expand_card(self, card_id: str) -> None:
         from tkinter import messagebox
@@ -315,7 +358,10 @@ class XeroxApp:
             messagebox.showinfo("Saved ✓", f"Your scan is here:\n{out}")
             self.ask_archive(card)
         except Exception as exc:
-            messagebox.showerror("Couldn't save", f"Nothing was written. What happened:\n{exc}")
+            messagebox.showerror("Couldn't save",
+                                 f"Nothing was written.\n\nUsually this means the machine isn't "
+                                 f"serving downloads right now:\n{exc}\n\n"
+                                 f"If the machine was restarted, poll again in a few minutes.")
 
     def ask_archive(self, card: dict) -> None:
         from tkinter import messagebox
@@ -330,12 +376,14 @@ class XeroxApp:
             where = delmod.archive_doc(blob, cfgmod.trash_dir(self.cfg), card["item"])
             device_delete(self.base_url)(card["item"])
             prevmod.release_preview(card)
-            self.app["queue"][:] = cardsmod.dismiss(self.app["queue"], card["id"])
+            view = self._view()
+            view[:] = cardsmod.dismiss(view, card["id"])
             self.refresh_cards()
             messagebox.showinfo("Archived ✓", f"Original kept safe in trash:\n{where}")
         except Exception as exc:
             messagebox.showerror("Left untouched",
-                                 f"Something failed, so NOTHING was removed from the machine:\n{exc}")
+                                 f"Something failed, so NOTHING was removed from the machine.\n"
+                                 f"(Often: the machine isn't serving downloads right now.)\n\n{exc}")
 
     def archive_card(self, card_id: str) -> None:
         try:
@@ -343,6 +391,106 @@ class XeroxApp:
         except Exception as exc:
             from tkinter import messagebox
             messagebox.showerror("Left untouched", str(exc))
+
+    # -- calendar find -----------------------------------------------------------
+    def pick_date(self, entry) -> None:
+        """Month-grid popup that fills an entry with YYYY-MM-DD. Styled like the app."""
+        import calendar as calmod
+        from datetime import date as dcls
+        ctk = self.ctk
+        F = STYLE["font"]
+        try:
+            cur = dcls.fromisoformat(entry.get().strip())
+        except ValueError:
+            cur = dcls.today()
+        state = {"y": cur.year, "m": cur.month}
+        win = ctk.CTkToplevel(self.root)
+        win.title("Pick a date")
+        win.geometry("300x320")
+        win.transient(self.root)
+        win.lift()
+        title = ctk.CTkLabel(win, text="", font=(F, 14, "bold"))
+        title.pack(pady=6)
+        grid = ctk.CTkFrame(win, fg_color="transparent")
+        grid.pack()
+
+        def draw():
+            for w in grid.winfo_children():
+                w.destroy()
+            title.configure(text=f"{calmod.month_name[state['m']]} {state['y']}")
+            for c, wd in enumerate(["M", "T", "W", "T", "F", "S", "S"]):
+                ctk.CTkLabel(grid, text=wd, font=(F, 11, "bold"),
+                             text_color=STYLE["muted_text"]).grid(row=0, column=c, padx=2)
+            for r, week in enumerate(calmod.monthcalendar(state["y"], state["m"]), 1):
+                for c, day in enumerate(week):
+                    if not day:
+                        ctk.CTkLabel(grid, text="").grid(row=r, column=c)
+                        continue
+                    is_today = (day, state["m"], state["y"]) == (cur.day, cur.month, cur.year)
+                    ctk.CTkButton(grid, text=str(day), width=34, height=30, corner_radius=8,
+                                  font=(F, 12, "bold") if is_today else (F, 12),
+                                  fg_color=STYLE["accent"] if is_today else "transparent",
+                                  border_width=0 if is_today else 1,
+                                  border_color=STYLE["card_border"],
+                                  command=lambda d=day: choose(d)).grid(row=r, column=c,
+                                                                        padx=2, pady=2)
+
+        def choose(day: int):
+            entry.delete(0, "end")
+            entry.insert(0, dcls(state["y"], state["m"], day).isoformat())
+            win.destroy()
+
+        def step(delta: int):
+            m = state["m"] + delta
+            state["y"], state["m"] = state["y"] + (m - 1) // 12, (m - 1) % 12 + 1
+            draw()
+
+        nav = ctk.CTkFrame(win, fg_color="transparent")
+        nav.pack(pady=6)
+        ctk.CTkButton(nav, text="<", width=44, corner_radius=8,
+                      fg_color="transparent", border_width=1, border_color=STYLE["card_border"],
+                      command=lambda: step(-1)).pack(side="left", padx=6)
+        ctk.CTkButton(nav, text=">", width=44, corner_radius=8,
+                      fg_color="transparent", border_width=1, border_color=STYLE["card_border"],
+                      command=lambda: step(1)).pack(side="left", padx=6)
+        draw()
+
+    def find_now(self) -> None:
+        """List the watched boxes, keep docs dated within From..To, show them as cards."""
+        from datetime import date as dcls
+        from tkinter import messagebox
+        from src.modules import search as searchmod, cards as cardsmod
+        try:
+            dfrom = dcls.fromisoformat(self.from_entry.get().strip())
+            dto = dcls.fromisoformat(self.to_entry.get().strip())
+        except ValueError:
+            messagebox.showerror("Find scans", "Pick both dates from the calendars (YYYY-MM-DD).")
+            return
+        if dfrom > dto:
+            messagebox.showerror("Find scans", "The From date is after the To date — swap them.")
+            return
+        try:
+            want = int(self.cfg.get("box") or 0)
+            boxes = [want] if want > 0 else [n for n, _ in discover_boxes_live(self.base_url)]
+            items, info = searchmod.find_docs(self.base_url, boxes, dfrom, dto)
+        except Exception as exc:
+            messagebox.showerror("Find scans", f"Couldn't list the machine:\n{exc}")
+            return
+        self._found = cardsmod.build_cards(items)
+        skipped = info.get("skipped", 0)
+        errs = info.get("errors", {})
+        note = f"{len(items)} found between {dfrom} and {dto}."
+        if skipped:
+            note += f" {skipped} row(s) had unreadable dates."
+        if errs:
+            note += f" Skipped boxes: {', '.join(sorted(errs))}."
+        self.find_info.configure(text=note)
+        self.refresh_cards()
+
+    def clear_find(self) -> None:
+        self._found = None
+        self.find_info.configure(text="")
+        self.refresh_cards()
 
     # -- trash + settings ------------------------------------------------------
     def review_trash(self) -> None:
@@ -362,6 +510,14 @@ class XeroxApp:
                             f"Delete what you no longer need — today's review is stamped.")
 
     def open_settings(self) -> None:
+        old = getattr(self, "_settings", {}).get("window")
+        try:
+            if old is not None and old.winfo_exists():
+                old.lift()
+                old.focus_set()
+                return
+        except Exception:
+            pass
         ctk = self.ctk
         F = STYLE["font"]
         from tkinter import filedialog, messagebox
@@ -370,6 +526,9 @@ class XeroxApp:
         win = ctk.CTkToplevel(self.root)
         win.title("Settings")
         win.geometry("440x520")
+        win.transient(self.root)
+        win.lift()
+        win.focus_set()
         cur = setmod.current_settings(self.cfg)
         try:
             found = discover_boxes_live(self.base_url)
@@ -480,6 +639,10 @@ class XeroxApp:
         self.root.mainloop()
 
 
-def launch(app: dict, **kwargs) -> None:
-    """Show the window. Raises on headless machines (caller falls back)."""
-    XeroxApp(app, **kwargs).mainloop()
+def launch(app: dict, start_hidden: bool = False, **kwargs) -> None:
+    """Show the window (or park in the tray with --minimized).
+    Raises on headless machines (caller falls back)."""
+    win = XeroxApp(app, **kwargs)
+    if start_hidden:
+        win.hide_to_tray()
+    win.mainloop()

@@ -32,7 +32,7 @@ technician. Re-run the T15 variant log only after INFO answers 200 again.
   Always re-list first (PWD is a per-list session token); assert before/after diff.
 
 ## Notes
-- No cookies set by device. Box1 stable at 16 docs (newest 8091).
+- No cookies set by device. Box1 at 17 docs (newest 8134) as of 2026-09-05.
 - History: boxes 2-7 intermittently 503 pre-restart (flaky service, varied run to
   run); user deleted them 2026-09-03 — rows retired, per-box skip retained as safety.
 - Filename TS ≈ `date` column (±2 min; 2 docs ±11 min) — watermark uses (fileNo,date,ts) tuple, safe.

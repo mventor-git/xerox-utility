@@ -1,7 +1,7 @@
-# REVIEW_REPORT (2026-09-03, ticket-017)
-- Architecture: tray/settings live in app layer; helper errors wrapped at boundary.
-- Security: read-only probes; no new secrets; tray menu exposes nothing sensitive.
-- Performance: tray detached thread; dropdown one 15KB call.
-- Regression: widget + sweep re-green; CTk6 composite lookups handled via refs.
-- Docs: contract verdict, state synced.
-- Deps: +pystray (reviewed, installed, setup verifies).
+# REVIEW_REPORT (2026-09-05, ticket-018)
+- Architecture: search module mirrors poller mercy rules; view-mode is presentation state only.
+- Security: nudge stamp persisted best-effort (sweep survives); date parse rejects garbage loudly.
+- Performance: find lists watched boxes once per click; picker is local.
+- Regression: unit + widget + live + sweep (18 modules) re-green.
+- Docs: census 17/8134, state synced.
+- Deps: none.

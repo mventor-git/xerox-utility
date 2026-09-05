@@ -59,6 +59,9 @@ exit /b 1
 :pyfound
 for /f "tokens=2" %%v in ('python --version 2^>^&1') do set PYVER=%%v
 echo Found Python %PYVER%.
+for /f %%p in ('python -c "import sys; print(sys.executable)"') do set PYEXE=%%p
+set PYWEXE=!PYEXE:python.exe=pythonw.exe!
+if not exist "!PYWEXE!" set PYWEXE=!PYEXE!
 
 echo.
 echo [2/6] Installing ALL required packages...
@@ -95,23 +98,23 @@ if errorlevel 1 (
 )
 
 echo.
-echo [5/6] Creating shortcuts and folders...
+echo [5/6] Creating shortcuts and folders (windowed app, no terminal, no .bat needed)...
 if not exist "%USERPROFILE%\Documents\Scans" mkdir "%USERPROFILE%\Documents\Scans"
-powershell -NoProfile -Command "$s=(New-Object -COM WScript.Shell).CreateShortcut($env:USERPROFILE+'\Desktop\Xerox Utility.lnk'); $s.TargetPath='!APPDIR!\run.bat'; $s.WorkingDirectory='!APPDIR!'; $s.Save()"
+powershell -NoProfile -Command "$s=(New-Object -COM WScript.Shell).CreateShortcut($env:USERPROFILE+'\Desktop\Xerox Utility.lnk'); $s.TargetPath='!PYWEXE!'; $s.Arguments='-m src.app.tray'; $s.WorkingDirectory='!APPDIR!'; $s.Save()"
 if errorlevel 1 (
-  echo [NOTE] Desktop shortcut failed -- just double-click run.bat in this folder instead.
+  echo [NOTE] Desktop shortcut failed -- double-click run.bat in this folder instead.
 ) else (
   echo Desktop shortcut created.
 )
-set /p AUTO="Start Xerox Utility automatically at login? [Y/n] "
+set /p AUTO="Start Xerox Utility automatically at login, quietly in the tray? [Y/n] "
 if /i "!AUTO:~0,1!"=="N" (
   echo OK -- start it by hand after login.
 ) else (
-  powershell -NoProfile -Command "$s=(New-Object -COM WScript.Shell).CreateShortcut($env:APPDATA+'\Microsoft\Windows\Start Menu\Programs\Startup\Xerox Utility.lnk'); $s.TargetPath='!APPDIR!\run.bat'; $s.WorkingDirectory='!APPDIR!'; $s.Save()"
+  powershell -NoProfile -Command "$s=(New-Object -COM WScript.Shell).CreateShortcut($env:APPDATA+'\Microsoft\Windows\Start Menu\Programs\Startup\Xerox Utility.lnk'); $s.TargetPath='!PYWEXE!'; $s.Arguments='-m src.app.tray --minimized'; $s.WorkingDirectory='!APPDIR!'; $s.Save()"
   if errorlevel 1 (
     echo [NOTE] Autostart shortcut failed -- start the app by hand after login.
   ) else (
-    echo It will now start on its own every login.
+    echo It will now start on its own, parked in the tray.
   )
 )
 
