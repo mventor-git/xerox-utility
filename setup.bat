@@ -77,14 +77,14 @@ if errorlevel 1 (
 
 echo.
 echo [3/6] Verifying every package...
-python -c "import requests, PIL, pypdf, img2pdf, windows_toasts, customtkinter" 2>nul
+python -c "import requests, PIL, pypdf, img2pdf, windows_toasts, customtkinter, pystray" 2>nul
 if errorlevel 1 (
   echo [ERROR] At least one package is missing or broken.
   echo Run this file again; if it keeps failing, pass the messages above to support.
   pause
   exit /b 1
 )
-echo requests, Pillow, pypdf, img2pdf, windows-toasts, customtkinter -- all OK.
+echo requests, Pillow, pypdf, img2pdf, windows-toasts, customtkinter, pystray -- all OK.
 
 echo.
 echo [4/6] Finding your printer and choosing its folder...
@@ -95,7 +95,8 @@ if errorlevel 1 (
 )
 
 echo.
-echo [5/6] Creating shortcuts...
+echo [5/6] Creating shortcuts and folders...
+if not exist "%USERPROFILE%\Documents\Scans" mkdir "%USERPROFILE%\Documents\Scans"
 powershell -NoProfile -Command "$s=(New-Object -COM WScript.Shell).CreateShortcut($env:USERPROFILE+'\Desktop\Xerox Utility.lnk'); $s.TargetPath='!APPDIR!\run.bat'; $s.WorkingDirectory='!APPDIR!'; $s.Save()"
 if errorlevel 1 (
   echo [NOTE] Desktop shortcut failed -- just double-click run.bat in this folder instead.

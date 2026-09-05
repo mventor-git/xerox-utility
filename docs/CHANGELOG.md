@@ -15,3 +15,4 @@
 - 2026-09-03: ticket-014 — hardcode audit (APP_NAME/URLs/paths/poll-interval centralized; dynamic box labels); guide LAN prerequisites + README link.
 - 2026-09-03: ticket-015 — retrieve exhaustion log + Playwright playbook (9 variants, all 503).
 - 2026-09-03: ticket-016 — setup v2 (LAN sweep all subnets, box-by-name pick, autostart, uninstaller); e2e proven with artifacts.
+- 2026-09-03: ticket-017 — retrieve verdict: DEVICE-SIDE partial outage (INFO/LINK/PBLST 503, LIST/SORT/DELETE 200); tray icon + app icon + settings v2 (box dropdown, trash browse, int guards).

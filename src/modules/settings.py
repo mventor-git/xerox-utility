@@ -5,7 +5,8 @@ from __future__ import annotations
 def current_settings(cfg: dict) -> dict:
     return {"ip": cfg.get("ip", ""), "timeout": cfg.get("timeout", 10),
             "box": cfg.get("box", 1), "store_dir": cfg.get("store_dir", ""),
-            "trash_dir": cfg.get("trash_dir", ""), "purge_check_days": cfg.get("purge_check_days", 30)}
+            "trash_dir": cfg.get("trash_dir", ""), "purge_check_days": cfg.get("purge_check_days", 30),
+            "poll_interval": cfg.get("poll_interval", 120)}
 
 
 def apply_settings(cfg: dict, ip: str | None = None, store_dir: str | None = None,

@@ -16,6 +16,7 @@ tickets/
 # Screenshots and image outputs
 screenshots/
 *.png
+!assets/*.png
 
 # Environment and secrets
 .env

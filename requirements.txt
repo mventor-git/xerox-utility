@@ -3,5 +3,6 @@ Pillow>=10
 pypdf>=4
 img2pdf>=0.5
 windows-toasts>=1.3  # Win toast backend (win10toast is dead)
+pystray>=0.19  # system tray icon + menu
 # UI: pick ONE — CustomTkinter (default) or PySide6
 customtkinter>=5.2

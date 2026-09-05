@@ -16,13 +16,14 @@ Evidence: `logs/probe-20260903T104615Z-*`. Read-only probe: GET + list-POST only
 - Print: `POST /PBDOCPRT.cmd` (same DOC style). Out of scope.
 - Box-level: `POST /PBLST.cmd`, `/PBINFO.cmd`, `/PBOXRMLST[KO].cmd`. Out of scope (never touch boxes).
 
-## Retrieve exhaustion log (ticket-015, all read-only, all → 503 REQUEST: ERROR)
-Minimal GET · exact-shape GET (PDF + TIFJPG) · full 15-field GET · +Referer ·
-browser-order session (scpblst→list→link, cookieless confirmed) · POST-variant ·
-IE header set · multi-DOC (`8091/8090/`) · index-DOC (`0/`).
-Direct HTTP is rejected at app level. Playbook: drive a real headed browser
-(Playwright) through CentreWare → mailbox → Retrieve, capture the download
-request, then replicate that exact sequence. No browser installs were done here.
+## Retrieve verdict (ticket-017): DEVICE-SIDE outage, not our code
+Handler census (all read-only): scpblst ✓, PBDOCLST ✓, PBDOCSORT ✓,
+PBDOCRM ✓ (proven) vs PBLST ✗, PBINFO ✗, PBDOCLNK ✗ (all 503).
+Sibling endpoints on the same box disagree → the controller's web service is
+partially crashed (fits the recent panel system error). No client variant and
+no browser automation can fix a server-side 503. Next step is at the machine:
+clean restart, then re-probe PBINFO; if still 503 with no panel error, call a
+technician. Re-run the T15 variant log only after INFO answers 200 again.
 
 ## Delete (proven)
 - Delete: `POST /PBDOCRM.cmd {BOX,PWD,ORD,DOC slash-joined}`. PROVEN 2026-09-03

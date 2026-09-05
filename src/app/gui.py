@@ -7,9 +7,11 @@ import os
 import queue
 import re
 import threading
+from pathlib import Path
 
 POLL_INTERVAL_S = 120
 FORMATS = ["PDF", "PNG", "JPG", "TIF"]
+ASSET_DIR = Path(__file__).resolve().parent.parent.parent / "assets"
 
 STYLE = {
     "font": "Segoe UI",
@@ -35,6 +37,17 @@ def box_token(base_url: str, box: int, timeout: int = 10) -> str:
     if not m:
         raise RuntimeError(f"no session token for box {box}")
     return m.group(2)
+
+
+def discover_boxes_live(base_url: str, timeout: int = 10) -> list[tuple[int, str]]:
+    """Live [(no, name)] for dropdowns. Raises loudly when unreachable."""
+    from src.core import device_client
+    from src.modules.discover import discover_boxes
+    try:
+        raw = device_client.get_raw_box_page(base_url, timeout=timeout)
+    except Exception as exc:
+        raise RuntimeError(f"can't reach the printer at {base_url} ({exc})")
+    return [(b["no"], b["name"]) for b in discover_boxes(raw)]
 
 
 def device_fetch(base_url: str, timeout: int = 30):
@@ -86,6 +99,15 @@ class XeroxApp:
         self.root.title(cfgmod.APP_NAME)
         self.root.geometry("980x640")
         self.root.minsize(760, 480)
+        try:
+            from PIL import Image, ImageTk
+            icon = ImageTk.PhotoImage(Image.open(ASSET_DIR / "icon.png").resize((32, 32)))
+            self.root.iconphoto(True, icon)
+            self._icon_photo = icon
+        except Exception:
+            pass
+        self._tray = None
+        self.root.protocol("WM_DELETE_WINDOW", self.hide_to_tray)
 
         side = ctk.CTkFrame(self.root, width=STYLE["sidebar_w"], corner_radius=0)
         side.pack(side="left", fill="y")
@@ -119,6 +141,42 @@ class XeroxApp:
         self.refresh_cards()
         self.root.after(1000, self._drain)
         self.root.after(self.poll_interval * 1000, self._tick)
+        self._ensure_tray()
+
+    # -- system tray -----------------------------------------------------------
+    def _tray_image(self):
+        from PIL import Image
+        return Image.open(ASSET_DIR / "icon.png")
+
+    def _ensure_tray(self) -> None:
+        """Create (once) and run the tray icon detached. Import-safe: no pystray, no tray."""
+        if self._tray is not None:
+            return
+        try:
+            import pystray
+        except ImportError:
+            return
+        from src.core.config import APP_NAME
+        menu = pystray.Menu(
+            pystray.MenuItem("Open", lambda icon, item: self.root.after(0, self.show_window)),
+            pystray.MenuItem("Poll now", lambda icon, item: self.poll_now()),
+            pystray.MenuItem("Quit", self._quit_from_tray),
+        )
+        self._tray = pystray.Icon(APP_NAME, self._tray_image(), APP_NAME, menu)
+        self._tray.run_detached()
+
+    def hide_to_tray(self) -> None:
+        """Closing the window parks the app in the tray; polling continues."""
+        self._ensure_tray()
+        self.root.withdraw()
+
+    def show_window(self) -> None:
+        self.root.deiconify()
+        self.root.lift()
+
+    def _quit_from_tray(self, icon, item) -> None:
+        icon.stop()
+        self.root.after(0, self.root.destroy)
 
     # -- background polling -------------------------------------------------
     def _tick(self) -> None:
@@ -311,25 +369,57 @@ class XeroxApp:
         from src.modules import settings as setmod
         win = ctk.CTkToplevel(self.root)
         win.title("Settings")
-        win.geometry("440x440")
+        win.geometry("440x520")
         cur = setmod.current_settings(self.cfg)
+        try:
+            found = discover_boxes_live(self.base_url)
+            box_values = [f"{n} - {name}" for n, name in found]
+        except Exception:
+            box_values = []
+        cur_box = int(cur.get("box") or 0)
+        box_initial = next((v for v in box_values if v.startswith(f"{cur_box} - ")),
+                           f"{cur_box} - (current)" if cur_box else "0 - all boxes")
+        if not box_values:
+            box_values = [box_initial]
+
         rows = {}
-        for i, (key, label) in enumerate((("ip", "Printer address"), ("box", "Watch box (0 = all)"),
-                                          ("store_dir", "My scans folder"), ("trash_dir", "Trash folder"))):
-            ctk.CTkLabel(win, text=label, font=(F, 12, "bold")).grid(row=i, column=0, padx=14, pady=8, sticky="w")
-            e = ctk.CTkEntry(win, width=250, height=30, corner_radius=8)
-            e.insert(0, cur.get(key, ""))
-            e.grid(row=i, column=1, padx=14, pady=8)
-            rows[key] = e
+        widgets: list = []
+
+        def add_row(label: str, key: str, kind: str = "entry", values: list | None = None):
+            ctk.CTkLabel(win, text=label, font=(F, 12, "bold")).pack(anchor="w", padx=14, pady=(8, 0))
+            if kind == "option":
+                w = ctk.CTkOptionMenu(win, values=values or [box_initial], width=250, height=30,
+                                      corner_radius=8, button_color=STYLE["info"],
+                                      button_hover_color=STYLE["info_hover"])
+                w.set(box_initial if box_initial in (values or []) else (values or [box_initial])[0])
+            else:
+                w = ctk.CTkEntry(win, width=250, height=30, corner_radius=8)
+                w.insert(0, cur.get(key, ""))
+            w.pack(anchor="w", padx=14)
+            rows[key] = w
+            widgets.append(w)
+
+        add_row("Printer address", "ip")
+        add_row("Watch folder (0 = all folders)", "box", kind="option", values=box_values)
+        add_row("My scans folder", "store_dir")
+        add_row("Trash folder", "trash_dir")
+        add_row("Check every (seconds)", "poll_interval")
+        add_row("Trash review reminder (days)", "purge_check_days")
         msg = ctk.CTkLabel(win, text="The app keeps your originals in trash, always.", font=(F, 11),
                            text_color=STYLE["muted_text"])
-        msg.grid(row=4, column=0, columnspan=2, pady=4)
+        msg.pack(pady=6)
 
-        def browse():
+        def browse_scans():
             d = filedialog.askdirectory(title="Where should your scans go?")
             if d:
                 rows["store_dir"].delete(0, "end")
                 rows["store_dir"].insert(0, d)
+
+        def browse_trash():
+            d = filedialog.askdirectory(title="Where should originals be kept?")
+            if d:
+                rows["trash_dir"].delete(0, "end")
+                rows["trash_dir"].insert(0, d)
 
         def check():
             from src.core.config import url_for_ip
@@ -337,34 +427,54 @@ class XeroxApp:
                 ok = setmod.check_device(url_for_ip(rows["ip"].get()), device_client.get_raw_box_page)
             except ValueError:
                 ok = False
-            msg.configure(text="Reachable ✓ — looking good." if ok else "Not reachable — check the address and network.")
+            msg.configure(text="Reachable - looking good." if ok else "Not reachable - check the address and network.")
+
+        def _int(key: str, minimum: int) -> int:
+            try:
+                value = int(str(rows[key].get()).strip())
+            except (TypeError, ValueError):
+                raise ValueError(f"{key} must be a whole number")
+            if value < minimum:
+                raise ValueError(f"{key} must be at least {minimum}")
+            return value
 
         def save():
             try:
+                box_no = int(str(rows["box"].get()).split("-", 1)[0].strip() or 0)
                 setmod.apply_settings(self.cfg, ip=rows["ip"].get(),
                                       store_dir=rows["store_dir"].get(),
                                       trash_dir=rows["trash_dir"].get() or None,
-                                      box=rows["box"].get().strip())
+                                      box=box_no)
+                self.cfg["poll_interval"] = _int("poll_interval", 30)
+                self.cfg["purge_check_days"] = _int("purge_check_days", 1)
+                self.poll_interval = int(self.cfg["poll_interval"])
                 cfgmod.save_config(self.cfg)
                 self.base_url = cfgmod.base_url(self.cfg)
-                msg.configure(text="Saved ✓ (new box takes effect on next poll)")
+                msg.configure(text="Saved - new values apply on the next poll")
             except Exception as exc:
                 messagebox.showerror("Settings", str(exc))
 
-        browse_btn = ctk.CTkButton(win, text="Browse…", corner_radius=8,
-                                    fg_color="transparent", border_width=1,
-                                    border_color=STYLE["card_border"], command=browse)
-        browse_btn.grid(row=5, column=0, padx=14, pady=6)
-        check_btn = ctk.CTkButton(win, text="Check device", corner_radius=8,
+        btn_row = ctk.CTkFrame(win, fg_color="transparent")
+        btn_row.pack(pady=6)
+        browse_btn = ctk.CTkButton(btn_row, text="Scans…", width=110, corner_radius=8,
+                                   fg_color="transparent", border_width=1,
+                                   border_color=STYLE["card_border"], command=browse_scans)
+        browse_btn.pack(side="left", padx=4)
+        trash_btn = ctk.CTkButton(btn_row, text="Trash…", width=110, corner_radius=8,
+                                  fg_color="transparent", border_width=1,
+                                  border_color=STYLE["card_border"], command=browse_trash)
+        trash_btn.pack(side="left", padx=4)
+        check_btn = ctk.CTkButton(btn_row, text="Check device", width=130, corner_radius=8,
                                   fg_color=STYLE["info"], hover_color=STYLE["info_hover"],
                                   command=check)
-        check_btn.grid(row=5, column=1, padx=14, pady=6)
+        check_btn.pack(side="left", padx=4)
         save_btn = ctk.CTkButton(win, text="Save", font=(F, 13, "bold"), corner_radius=8,
                                  fg_color=STYLE["accent"], hover_color=STYLE["accent_hover"],
                                  text_color=STYLE["accent_text"], command=save)
-        save_btn.grid(row=6, column=0, columnspan=2, pady=12)
+        save_btn.pack(pady=10)
         self._settings = {"window": win, "rows": rows, "msg": msg,
-                          "browse": browse_btn, "check": check_btn, "save": save_btn}
+                          "browse": browse_btn, "trash_browse": trash_btn,
+                          "check": check_btn, "save": save_btn}
 
     def mainloop(self) -> None:
         self.root.mainloop()

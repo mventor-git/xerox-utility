@@ -1,7 +1,7 @@
-# REVIEW_REPORT (2026-09-03, ticket-016)
-- Architecture: setup drives existing seams only; box select = config value, no forks.
-- Security: sweep is port-80 GETs on local LAN only; no creds; uninstall preserves shared packages.
-- Performance: threaded sweep (~seconds per /24); 127.0.0.1 single probe.
-- Regression: widget + live + sweep re-green; console-safe ASCII prints.
-- Docs: guide setup flow, state synced.
-- Deps: none (stdlib + requests).
+# REVIEW_REPORT (2026-09-03, ticket-017)
+- Architecture: tray/settings live in app layer; helper errors wrapped at boundary.
+- Security: read-only probes; no new secrets; tray menu exposes nothing sensitive.
+- Performance: tray detached thread; dropdown one 15KB call.
+- Regression: widget + sweep re-green; CTk6 composite lookups handled via refs.
+- Docs: contract verdict, state synced.
+- Deps: +pystray (reviewed, installed, setup verifies).
