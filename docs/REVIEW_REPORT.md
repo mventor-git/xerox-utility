@@ -1,7 +1,7 @@
-# REVIEW_REPORT (2026-09-03, ticket-013)
-- Architecture: app-only change; logic modules untouched; fetch/delete injected seams with device defaults.
-- Security: confirm-gated archive; failures leave device untouched; no secrets in UI.
-- Performance: worker-thread polls, after() drain; thumbnails bounded 560×360.
-- Regression: widget test re-green after 2 fixes; sweep 16 modules OK.
-- Docs: backlog (GUI done, 2 items left), state synced.
-- Deps: customtkinter 6.0 verified live (installed by setup).
+# REVIEW_REPORT (2026-09-03, ticket-014)
+- Architecture: facts single-sourced in core/config; modules/app consume, none define.
+- Security: no machine data in code; secret grep still clean.
+- Performance: n/a (mechanical).
+- Regression: widget + live + sweep re-green.
+- Docs: guide prerequisites, README link, state synced.
+- Deps: none.

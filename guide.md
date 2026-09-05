@@ -4,6 +4,25 @@ Welcome! This little app watches your Xerox machine's scan folder and
 taps you on the shoulder whenever new scans arrive. Nothing to learn —
 it does the watching, you do the filing.
 
+## Before you start — your machine and network
+
+The app talks to your Xerox over your office network, so two things
+must be true first:
+
+1. **The Xerox is set up on your local network (LAN)** — connected by
+   Ethernet cable or Wi-Fi, powered on, and past any error screens.
+2. **You know the machine's LAN IP address.** Find it on the machine
+   itself: open its **device information** (usually under *Machine
+   Status* or *Information* on the panel, or a printed configuration /
+   network report) and look for the **IPv4 address** — something like
+   `192.168.1.20`. Type that address into the app under
+   **Settings → Printer address**, then press **Check device**. If it
+   says reachable, you're good to go.
+
+The PC and the printer must stay on the same network — if either moves
+to a different Wi-Fi or subnet, the app will tell you it can't reach
+the device until the address is updated.
+
 ## 1. Install (once per PC)
 
 1. Copy the **Xerox Utility** folder onto the PC (e.g. `Documents`).

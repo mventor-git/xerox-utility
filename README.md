@@ -19,10 +19,19 @@ call — the app just reminds you once every 30 days.
 
 ## Quickstart
 
+Double-click **`setup.bat`** — it installs Python (if missing), all
+packages, and a desktop shortcut, then offers to start the app.
+
+Prefer the manual route:
+
 ```bat
 pip install -r requirements.txt
 python -m src.app.tray
 ```
+
+📖 **New here? Read [guide.md](guide.md)** — prerequisites (your Xerox
+on the LAN + finding its IP), first run, everyday use, the trash
+safety net, and troubleshooting.
 
 On first run it quietly notes what's already on the machine, so you only
 hear about genuinely new scans from then on.

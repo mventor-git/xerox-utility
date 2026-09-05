@@ -12,3 +12,4 @@
 - 2026-09-03: ticket-011 — device now Box 1 only (user-deleted rest); run_once zero-skip clean; retired flakiness rows.
 - 2026-09-03: ticket-012 — git-ready + pushed (mventor-git/xerox-utility); README credits; guide.md; full setup.bat/run.bat; private gitignore.
 - 2026-09-03: ticket-013 — polished GUI (stylesheet, sidebar, cards, settings, popups); widget test caught 2 real bugs.
+- 2026-09-03: ticket-014 — hardcode audit (APP_NAME/URLs/paths/poll-interval centralized; dynamic box labels); guide LAN prerequisites + README link.

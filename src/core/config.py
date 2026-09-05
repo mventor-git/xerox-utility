@@ -6,7 +6,9 @@ from pathlib import Path
 
 DEFAULT_IP = "192.168.1.20"
 DEFAULT_TIMEOUT = 10
-APP_DIR_NAME = "Xerox Utility"
+DEFAULT_POLL_INTERVAL = 120
+APP_NAME = "Xerox Utility"
+APP_DIR_NAME = APP_NAME
 TRASH_DIR_NAME = "trash"
 WATERMARK_NAME = "watermark.json"
 DEFAULT_PURGE_CHECK_DAYS = 30
@@ -19,7 +21,8 @@ def default_config_path() -> Path:
 
 def default_config() -> dict:
     return {"ip": DEFAULT_IP, "timeout": DEFAULT_TIMEOUT, "store_dir": "",
-            "trash_dir": "", "last_purge_check": "", "purge_check_days": DEFAULT_PURGE_CHECK_DAYS}
+            "trash_dir": "", "last_purge_check": "", "purge_check_days": DEFAULT_PURGE_CHECK_DAYS,
+            "poll_interval": DEFAULT_POLL_INTERVAL}
 
 
 def load_config(path: Path | None = None) -> dict:
@@ -40,10 +43,23 @@ def save_config(cfg: dict, path: Path | None = None) -> Path:
 
 
 def base_url(cfg: dict) -> str:
-    ip = (cfg.get("ip") or DEFAULT_IP).strip()
-    if not ip:
-        raise ValueError("empty device IP in config")
-    return f"http://{ip}"
+    return url_for_ip((cfg.get("ip") or DEFAULT_IP).strip())
+
+
+def url_for_ip(ip: str) -> str:
+    """Single place that turns an address into a device URL."""
+    if not (ip or "").strip():
+        raise ValueError("empty device IP")
+    return f"http://{ip.strip()}"
+
+
+def default_store_dir() -> Path:
+    return Path.home() / APP_DIR_NAME
+
+
+def store_dir(cfg: dict) -> Path:
+    override = (cfg.get("store_dir") or "").strip()
+    return Path(override) if override else default_store_dir()
 
 
 def default_trash_dir() -> Path:

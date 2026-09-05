@@ -33,11 +33,12 @@ def record_purge_check(cfg: dict, today: str | None = None) -> dict:
 
 def problems(cfg: dict) -> list[str]:
     """Human hints for the settings screen. Empty = healthy."""
+    from src.core.config import APP_DIR_NAME
     out = []
     if not (cfg.get("ip") or "").strip():
         out.append("device IP is empty")
     if not (cfg.get("store_dir") or "").strip():
-        out.append("no store folder — files fall back to ~/Xerox Utility")
+        out.append(f"no store folder — files fall back to ~/{APP_DIR_NAME}")
     return out
 
 

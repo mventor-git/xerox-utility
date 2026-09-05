@@ -1,7 +1,6 @@
 """Sync device HTTP client. Read-only except explicit delete path.
 
-Locked by live probe 2026-09-03 (WorkCentre 5325 @ 192.168.1.20,
-evidence `logs/probe-20260903T104615Z-*`, contract `docs/cache/device_contract.md`):
+Locked by live probe (see docs/cache/device_contract.md for addresses):
 - PROVEN: GET scpblst.htm, POST PBDOCLST.cmd (list).
 - SHAPE-KNOWN, blob UNPROVEN: GET PBDOCLNK.cmd (retrieve; direct calls → 503
   REQUEST: ERROR, needs browser-flow session; see downloader ticket).

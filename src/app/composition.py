@@ -16,6 +16,7 @@ def build(cfg_path: Path | None = None, *, state_path: Path | None = None,
 
     def run_once() -> dict:
         from src.core import device_client, watermark as W
+        from src.core.config import APP_NAME
         from src.lib.filename_date import extract_ts
         from src.modules import poller, discover, cards, notify
         from src.modules import delete as delmod
@@ -24,8 +25,11 @@ def build(cfg_path: Path | None = None, *, state_path: Path | None = None,
         first = not wm_path.exists()
         if box_nos is not None:
             boxes = list(box_nos)
+            box_names = {}
         else:
-            boxes = [b["no"] for b in discover.discover_boxes(device_client.get_raw_box_page(base))]
+            found = discover.discover_boxes(device_client.get_raw_box_page(base))
+            boxes = [b["no"] for b in found]
+            box_names = {b["no"]: b["name"] for b in found}
         fetch = list_box or (lambda b: poller.fetch_box_docs(base, b, cfg.get("timeout", 10)))
         state = W.load(wm_path)
         fresh, state, errors = poller.poll_once(fetch, boxes, state, extract_ts,
@@ -36,14 +40,16 @@ def build(cfg_path: Path | None = None, *, state_path: Path | None = None,
         purge_due = delmod.purge_check_due(cfg.get("last_purge_check"),
                                            days=cfg.get("purge_check_days", delmod.PURGE_CHECK_DAYS))
         if purge_due:
-            notify.send("Xerox Utility", delmod.purge_message(delmod.count_archived(troot)),
+            notify.send(APP_NAME, delmod.purge_message(delmod.count_archived(troot)),
                         backend=backend)
         return {"fresh": fresh, "errors": errors, "notified": notified,
-                "purge_due": purge_due, "queue": queue, "problems": setmod.problems(cfg)}
+                "purge_due": purge_due, "queue": queue, "problems": setmod.problems(cfg),
+                "box_names": box_names}
 
     def run() -> None:
+        from src.core.config import APP_NAME
         out = run_once()
-        print(f"Xerox Utility: {len(out['fresh'])} new, "
+        print(f"{APP_NAME}: {len(out['fresh'])} new, "
               f"{len(out['errors'])} boxes skipped, purge_due={out['purge_due']}")
 
     return {"config": cfg, "queue": queue, "run_once": run_once, "run": run}

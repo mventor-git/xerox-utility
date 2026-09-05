@@ -12,7 +12,8 @@ SUPPORTED = (".pdf", ".png", ".jpg", ".jpeg", ".tif", ".tiff")
 
 
 def dest_path(store_dir: str | Path, item: dict, ext: str) -> Path:
-    base = Path(store_dir) if str(store_dir) else Path.home() / "Xerox Utility"
+    from src.core.config import default_store_dir
+    base = Path(store_dir) if str(store_dir) else default_store_dir()
     safe = "".join(c if c.isalnum() or c in "._- " else "_" for c in item.get("name", "scan"))
     return base / f"{safe}{ext if ext.startswith('.') else '.' + ext}"
 

@@ -7,7 +7,7 @@ available. Callers compose texts (app wires e.g. delete.purge_message).
 from __future__ import annotations
 from typing import Callable
 
-APP_TITLE = "Xerox Utility"
+from src.core.config import APP_NAME as APP_TITLE
 DETAIL_LIMIT = 3
 
 

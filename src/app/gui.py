@@ -67,7 +67,7 @@ def device_delete(base_url: str, timeout: int = 15):
 class XeroxApp:
     """Thin Tk shell; built on first show so imports stay headless-safe."""
 
-    def __init__(self, app: dict, fetch=None, poll_interval: int = POLL_INTERVAL_S):
+    def __init__(self, app: dict, fetch=None, poll_interval: int | None = None):
         import customtkinter as ctk
         from src.core import config as cfgmod
         self.ctk = ctk
@@ -75,21 +75,23 @@ class XeroxApp:
         self.cfg = app["config"]
         self.base_url = cfgmod.base_url(self.cfg)
         self.fetch = fetch or device_fetch(self.base_url)
-        self.poll_interval = poll_interval
+        self.poll_interval = poll_interval or self.cfg.get("poll_interval", POLL_INTERVAL_S)
         self._results: queue.Queue = queue.Queue()
         self._card_widgets: dict = {}
+        self._box_names: dict = {}
         F = STYLE["font"]
 
         ctk.set_appearance_mode("system")
         self.root = ctk.CTk()
-        self.root.title("Xerox Utility")
+        self.root.title(cfgmod.APP_NAME)
         self.root.geometry("980x640")
         self.root.minsize(760, 480)
 
         side = ctk.CTkFrame(self.root, width=STYLE["sidebar_w"], corner_radius=0)
         side.pack(side="left", fill="y")
         side.pack_propagate(False)
-        ctk.CTkLabel(side, text="◉  Xerox Utility", font=(F, 20, "bold")).pack(pady=(20, 0), padx=16, anchor="w")
+        from src.core.config import APP_NAME
+        ctk.CTkLabel(side, text=f"◉  {APP_NAME}", font=(F, 20, "bold")).pack(pady=(20, 0), padx=16, anchor="w")
         ctk.CTkLabel(side, text="never miss a scan", font=(F, 12),
                      text_color=STYLE["muted_text"]).pack(padx=18, anchor="w", pady=(0, 12))
         self.status = ctk.CTkLabel(side, text="●  starting…", font=(F, 12, "bold"),
@@ -106,10 +108,11 @@ class XeroxApp:
                           corner_radius=10, height=34, command=cmd).pack(pady=4, padx=14, fill="x")
         ctk.CTkLabel(side, text="Originals are always\nkept in trash first.", font=(F, 11),
                      text_color=STYLE["muted_text"], justify="left").pack(side="bottom", pady=(0, 4), padx=16, anchor="w")
-        ctk.CTkLabel(side, text="Box 1 · Scans", font=(F, 11),
-                     text_color=STYLE["muted_text"]).pack(side="bottom", pady=(0, 14), padx=16, anchor="w")
+        self.footer_boxes = ctk.CTkLabel(side, text="watching…", font=(F, 11),
+                                            text_color=STYLE["muted_text"])
+        self.footer_boxes.pack(side="bottom", pady=(0, 14), padx=16, anchor="w")
 
-        self.cards_box = ctk.CTkScrollableFrame(self.root, label_text="Scans",
+        self.cards_box = ctk.CTkScrollableFrame(self.root, label_text="…",
                                                 label_font=(F, 14, "bold"), corner_radius=0)
         self.cards_box.pack(side="right", fill="both", expand=True)
 
@@ -139,6 +142,11 @@ class XeroxApp:
                     skipped = len(payload["errors"])
                     self._set_status(f"●  {n} new" + (f" · {skipped} skipped" if skipped else " · up to date"),
                                      warn=False)
+                    names = payload.get("box_names") or {}
+                    if names:
+                        self._box_names = dict(names)
+                        self.footer_boxes.configure(
+                            text=", ".join(f"Box {b} · {names[b]}" for b in sorted(names)))
                     self.refresh_cards()
         except queue.Empty:
             pass
@@ -152,6 +160,8 @@ class XeroxApp:
     def refresh_cards(self) -> None:
         ctk = self.ctk
         F = STYLE["font"]
+        names = list(self._box_names.values())
+        self.cards_box.configure(label_text=names[0] if len(names) == 1 else "…")
         for w in self.cards_box.winfo_children():
             w.destroy()
         self._card_widgets = {}
@@ -322,7 +332,11 @@ class XeroxApp:
                 rows["store_dir"].insert(0, d)
 
         def check():
-            ok = setmod.check_device("http://" + rows["ip"].get().strip(), device_client.get_raw_box_page)
+            from src.core.config import url_for_ip
+            try:
+                ok = setmod.check_device(url_for_ip(rows["ip"].get()), device_client.get_raw_box_page)
+            except ValueError:
+                ok = False
             msg.configure(text="Reachable ✓ — looking good." if ok else "Not reachable — check the address and network.")
 
         def save():
