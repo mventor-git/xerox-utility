@@ -1,0 +1,28 @@
+# .muse — thinking kernel (Xerox Utility)
+Thinker: MUSE. 1 Thinking + 1 Launch session. No THINKING.md (not requested).
+
+## Core value
+Never miss a scan; save where I want with name/format I want; zero hunting in scan.htm.
+
+## Decisions
+| D | Why |
+|---|---|
+| Sidecar, not clone | Keep Scan3/TWAIN; only watch/notify/save = smaller, safer |
+| Watch ALL boxes | Notification must show which folder used; auto-discover, no hardcode |
+| Watermark per-box (fileNo+date+filename TS) | Ignore 17 old files on first run; catch up after PC-off/network-drop |
+| Lazy download | List/metadata on poll; full TIFF only on expand/click = light |
+| Post-transfer popup `Delete from device?` + bulk delete in GUI | Prevent pile-up/re-notify; delete only on confirm |
+| Sidebar + cards (small→expanded preview) + Settings (IP+checker, default store folder) | Modern UX; fallback folder if user picks none |
+| Python modern UI | User choice; fastest HTTP/convert/toast path |
+
+## OUT
+No folder/user creation on device, no print, no SNMP/SOAP/TWAIN parity.
+
+## Risks / unknowns
+- Retrieve + delete `.cmd` shape open (need read-only tail probe of Retrieve form).
+- Password boxes: need per-box auth test; Box1 open, others unknown.
+- Multi-PC race: if A deletes, B misses; accept v1, note it.
+- TIFF multipage fidelity; toast persistence limits on Win.
+
+## For executor
+Prove download+delete read-first, then poller→notify→cards→save/convert→settings. Success = better UI/UX now, automation-ready next.

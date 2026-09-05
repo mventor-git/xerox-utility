@@ -1,0 +1,30 @@
+# .mventor — Xerox Utility metadata
+Project: Xerox Utility sidecar auto-scanner (WorkCentre 5325 @ 192.168.1.20).
+Identity: see `profile.md` (Muse-owned, never edit). Thinking: see `.muse` (read-only).
+
+## Constitution
+- Sidecar only: never replace Network Scan3/TWAIN; no folder/user creation on device.
+- Read-only by default: only GET + list POST; delete only on explicit user confirm.
+- Modules via explicit functions, no cross-imports. No SNMP/SOAP/TWAIN.
+- UI thread ≠ poller thread; lazy download only.
+- Config in `%AppData%/Xerox Utility/` JSON; never hardcode IP; fail loudly.
+
+## Architecture
+Poller → Differ (watermark/box) → Notifier → Queue/Cards → Lazy downloader → Save/Convert → Delete-confirm.
+
+## Module map (planned, `src/` empty)
+- `core/`: config, watermark, device_client
+- `lib/`: parse_box_lst, filename_date
+- `modules/`: discover, poller, notify, cards, preview, save_convert, delete, settings
+- `app/`: tray, composition
+
+## Conventions
+- Python 3.11+, requests timeout 10s, regex `var box/lst` windows-1252.
+- Pillow + pypdf/img2pdf for TIFF→PDF.
+- Plain text, greppable.
+
+## State pointers
+- State: `docs/PROJECT_STATE.md`
+- Handover: `docs/HANDOVER.md`
+- Active ticket: `tickets/` (none yet)
+- Cache: `docs/cache/`

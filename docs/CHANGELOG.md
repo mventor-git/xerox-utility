@@ -1,0 +1,12 @@
+# CHANGELOG
+- 2026-09-03: repo init — `docs/`, `tickets/`, `logs/`, `.mventor`, 8 memory docs created.
+- 2026-09-03: ticket-002 — `src/` scaffold (core/lib/8 modules/app, requirements, gitignore); import-sweep + smoke OK.
+- 2026-09-03: ticket-003 — live probe (7 boxes, Box1/17 docs); shapes locked in `device_contract.md`; fixed quote tokenizer + 9-cell rows + img- TS; retrieve blob 503 (downloader follows).
+- 2026-09-03: ticket-004 — user-confirmed delete Box1/8107 via PBDOCRM (200 REQUEST: ACCEPTED); 17→16 docs, rest intact.
+- 2026-09-03: ticket-005 — never-destroy rule: archive-then-delete to AppData trash/<box>/ + 30d purge nudge; two-phase safety proven.
+- 2026-09-03: ticket-006 — poll sweep live-proven (baseline, no re-notify, catch-up, locked-box skip, all-fail raise); box1 = 16 docs.
+- 2026-09-03: ticket-007 — batched notifier (1→detail, ≤3→lines, else per-box counts) + windows-toasts backend; zero-toast validation.
+- 2026-09-03: ticket-008 — cards queue (sync/stale/dismiss) + lazy preview (load-once, releasable); fetch-count proof.
+- 2026-09-03: ticket-009 — save/convert (2-page TIFF→PDF both paths, stills, TIF passthrough, guards).
+- 2026-09-03: ticket-010 — app run_once wired (poll→cards→notify→purge) + settings record/problems; live-stable across flaky device states.
+- 2026-09-03: ticket-011 — device now Box 1 only (user-deleted rest); run_once zero-skip clean; retired flakiness rows.
